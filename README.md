@@ -38,5 +38,53 @@ IP: 192.16.56.10
   
   * Clone this repo
   ~~~
+  git clone https://github.com/gjasusa/Ansible_Docker_Exam.git
+  ~~~
+  
+  * Install epel-release and ansible on your controller
+  ~~~
+  yum install epel-release -y
+  yum install ansible -y
+  ~~~
+  
+  * Change DIR where my repo cloned and you can see the files
+  
+  * Change user to 'exam'
+  ~~~
+  su - exam
+  ~~~
+  
+  * Make SSH keypairs with:
+  ~~~
+  ssh-keygen
+  ~~~
+  
+  Push ENTER three times, it creates ssh keypair with default locations for 'exam' user
+  
+  * Change user back to root
+  ~~~
+  CTRL+D
+  ~~~
+  
+  * First we need to create 'exam' user on remote hosts as 'root' and spread ssh key for 'exam' user on remote hosts:
+  ~~~
+  ansible-playbook -i create_user_hosts -k create_user.yaml
+  ~~~
+  
+  * Change user to 'exam'
+  ~~~
+  su - exam
+  ~~~
+  
+  * Run my playbook that installs Apache and nodeJS server with nodeJS Docker container on nodejs server
+  ~~~
+  ansible-playbook -i install_hosts install.yaml
+  ~~~
+  
+  # Well done you have a separate Apache and nodeJS server with nodeJS Docker container on nodeJS server
+  
+  
+  
+ 
 
   
