@@ -47,8 +47,6 @@ IP: 192.168.56.10
   yum install ansible -y
   ~~~
   
-  * Change DIR where my repo cloned and you can see the files
-  
   * Change user to 'exam'
   ~~~
   su - exam
@@ -66,6 +64,11 @@ IP: 192.168.56.10
   CTRL+D
   ~~~
   
+  * Change DIR where my repo cloned and you can see the files
+  ~~~
+  cd /here/my/repo/was/cloned
+  ~~~
+    
   * First we need to create 'exam' user on remote hosts as 'root' and spread ssh key for 'exam' user on remote hosts:
   ~~~
   ansible-playbook -i create_user_hosts -k create_user.yaml
