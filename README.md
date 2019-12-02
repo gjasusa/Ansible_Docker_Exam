@@ -66,7 +66,7 @@ IP: 192.168.56.10
   
   * Change DIR where my repo cloned and you can see the files
   ~~~
-  cd /here/my/repo/was/cloned
+  cd /where/my/repo/was/cloned
   ~~~
     
   * First we need to create 'exam' user on remote hosts as 'root' and spread ssh key for 'exam' user on remote hosts:
