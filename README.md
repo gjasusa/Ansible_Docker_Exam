@@ -12,7 +12,7 @@ IP: 192.168.56.200
 
 Host: ansible-controller
 
-IP: 192.16.56.10
+IP: 192.168.56.10
 
 ---
 # First Usage:
