@@ -1,0 +1,11 @@
+[web]
+ansible-web ansible_host=192.168.56.100
+
+[nodejs]
+ansible-nodejs ansible_host=192.168.56.200
+
+[all:vars]
+ansible_connection=ssh
+ansible_user=root
+ansible_pass='000000'
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
