@@ -1,0 +1,220 @@
+---
+- name: Install Apache web server for ansible-web host
+  hosts: web
+  become: yes
+
+  tasks:
+
+  - name: Set hostname for ansible-web
+    hostname:
+      name: ansible-web
+
+  - name: Install Apache
+    yum:
+      name: httpd
+      state: latest
+  
+  - name: Start httpd service, if it's not done already
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+  
+  - name: Open TCP Port 80 with firewalld
+    firewalld: 
+      port: 80/tcp
+      permanent: yes
+      state: enabled
+    register: firewall_apache
+
+  - name: Open TCP Port 443 with firewalld
+    firewalld: 
+      port: 443/tcp
+      permanent: yes
+      state: enabled
+    register: firewall_apache
+
+  - name: Restart firewall, if something was changed after the last playbook run
+    service:
+      name: firewalld
+      state: restarted
+      enabled: yes
+    when: firewall_apache.changed
+    
+  - name: Install libsemanage-python to be able to set httpd flag
+    yum:
+      name: libsemanage-python
+      state: latest
+
+  - name: Set httpd_can_network_connect flag and make it persistent
+    seboolean:
+      name: httpd_can_network_connect
+      state: yes
+      persistent: yes
+
+  - name: Deploy Apache Proxy config
+    template:
+      src: ./templates/proxy_template.j2
+      dest: /etc/httpd/conf.d/proxy.conf
+    register: sysctl_apache
+    
+  - name: Restart httpd, if something was changed in Proxy config after the last playbook run
+    service:
+      name: httpd
+      state: restarted
+      enabled: yes
+    when: sysctl_apache.changed 
+
+
+- name: Install nodeJS service for ansible-nodejs host with dependencies
+  hosts: nodejs
+  become: yes
+
+  tasks:
+
+  - name: Set hostname for ansible-nodejs host
+    hostname:
+      name: ansible-nodejs
+      
+  - name: Add repository for nodeJS
+    shell: curl -sL https://rpm.nodesource.com/setup_10.x | sudo -E bash -
+
+  - name: Install required packages
+    package:
+      name:
+        - nodejs
+        - gcc
+        - make
+        - git
+      state: latest   
+      
+  - name: Install Supervisor
+    npm:
+      name: supervisor
+      global: yes
+
+  - name: Creates nodeJS directory
+    file:
+      path: /nodejs/
+      state: directory    
+
+  - name: Copy prepared index.js file for nodeJS
+    copy:
+      src: ./nodejs/index_nodeJS.js
+      dest: /nodejs/index_nodeJS.js
+      owner: root
+      group: root
+      mode: '0644'
+    register: nodejs
+  
+  - name: Copy prepared systemd UNIT file for nodeJS with supervisor
+    copy:
+      src: ./nodejs/nodejs.service
+      dest: /usr/lib/systemd/system/nodejs.service
+      owner: root
+      group: root
+      mode: '0644'
+      
+  - name: Open TCP port 8080 for nodeJS server
+    firewalld:
+      port: 8080/tcp
+      permanent: yes
+      state: enabled
+    register: nodejs_firewall
+    
+  - name: Restart firewall if something was changed after the last playbook run
+    service:
+      name: firewalld
+      state: restarted
+      enabled: yes
+    when: nodejs_firewall.changed  
+      
+  - name: Systemd Daemon reload
+    systemd: 
+      daemon_reload: yes
+
+  - name: Restart and enable nodeJS service if something was changed after the last playbook run    
+    systemd:
+      name: nodejs
+      state: restarted
+      enabled: yes
+    when: nodejs.changed
+
+- name: Implement docker and create dockerimage
+  hosts: nodejs
+  become: true
+  vars:
+    packages_docker: [yum-utils,device-mapper-persistent-data,lvm2,docker-ce,python-pip]
+    docker_container_name: "exam/nodeapp"
+  tags:
+    - docker
+
+  tasks:
+  - name: Add Docker repo
+    get_url:
+      url: https://download.docker.com/linux/centos/docker-ce.repo
+      dest: /etc/yum.repos.d/docker-ce.repo
+
+  - name: Install epel-release packages
+    package:
+      name: epel-release
+      state: latest
+
+  - name: Install required os packages
+    package:
+      name: '{{packages_docker}}'
+      state: latest
+  
+  - name: Install required pip packages
+    pip:
+      name: docker-py
+
+  - name: Add user exam to docker group
+    user:
+      name: exam
+      groups: docker
+      append: yes
+    become: yes
+
+  - name: Start docker service
+    systemd:
+      state: started
+      name: docker    
+
+  - name: Copy docker folder to ansible-nodejs
+    copy:
+      src: ./docker
+      dest: /
+      owner: exam
+      group: wheel
+      mode: '0644' 
+      
+  - name: Build docker image
+    docker_image:
+      name: '{{ docker_container_name }}'
+      path: /docker/    
+      tag: latest
+      source: build
+      state: present
+      timeout: 300
+
+  - name: Start container
+    docker_container:
+      name: exam_container
+      image: '{{ docker_container_name }}'
+      published_ports: 8070:8070
+      state: started
+      
+  - name: Open TCP port 8070 for docker container
+    firewalld:
+      port: 8070/tcp
+      permanent: yes
+      state: enabled
+    notify: restart firewall
+      
+  handlers:
+  - name: restart firewall
+    service:
+      name: firewalld
+      state: restarted
+      enabled: yes    
