@@ -16,7 +16,7 @@ IP: 192.168.56.10
 
 ---
 # First Usage:
-  * Make exam user and set password (000000)
+  * Make exam user and set password
   ~~~
   adduser exam
   passwd exam
