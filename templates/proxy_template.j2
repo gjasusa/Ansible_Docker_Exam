@@ -1,0 +1,6 @@
+<VirtualHost 192.168.56.100:80>
+
+    ProxyPass /node http://{{hostvars['ansible-nodejs']['ansible_host'] }}:8080
+    ProxyPassReverse /node http://{{hostvars['ansible-nodejs']['ansible_host']}}:8080
+
+</VirtualHost>
