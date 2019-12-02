@@ -179,7 +179,8 @@
   - name: Start docker service
     systemd:
       state: started
-      name: docker    
+      name: docker
+      enabled: yes
 
   - name: Copy docker folder to ansible-nodejs
     copy:
